@@ -21,16 +21,51 @@ abstract class Controller
         $this->db->set_charset("utf8");
         //$this->input = json_decode(file_get_contents('php://input'),false);
         $this->input = (object)$_POST;
+        $this->escapePost();
     }
 
-    /*function getUserByAuth()
-    {
-        isset ($this->input->auth_token) ? $authtoken = $this->input->auth_token : $authtoken = "";
-        $result = $this->dbQuery("SELECT id_korisnik FROM korisnik WHERE auth_token='$authtoken' AND aktivan=1 AND aktiviran=1");
-        $this->id_korisnik = $result->fetch_assoc()['id_korisnik'];
-        unset($this->input->auth_token);
-    }*/
+    function select() {
 
+        $tname = $this->table;
+        $con = $this->db;
+        $query = "SELECT * FROM $tname WHERE aktivan=1 ";
+        $res = $con->query($query);
+
+        if($con->errno) {
+            $this->error = ("Query failed! SQL Error message: ".$con->error."SQL that was executed: ".$query);
+            $this->data->success = false;
+        }
+
+        else {
+            $allRows = array();
+            while($currentRow = $res->fetch_assoc()) {
+                $allRows[] = $currentRow;
+            }
+            $this->data->success = true;
+            $this->data->rows = $allRows;
+        }
+
+    }
+
+    function selectByFK($fk, $fkValue) {
+        $tname = $this->table;
+        $con = $this->db;
+        $query = "SELECT * FROM $tname WHERE $fk = $fkValue AND aktivan=1 ";
+        $res = $con->query($query);
+
+        if($con->errno) {
+            $this->data->success = false;
+            $this->error = ("Query failed! SQL Error message: ".$con->error."SQL that was executed: ".$query);
+        }
+        else {
+            $allRows = array();
+            while($currentRow = $res->fetch_assoc()) {
+                $allRows[] = $currentRow;
+            }
+            $this->data->success = true;
+            $this->data->rows = $allRows;
+        }
+    }
 
     function update($id)
     {
@@ -56,8 +91,9 @@ abstract class Controller
 
         //$con->query("INSERT INTO log (id_korisnik, sql_upit, ip) VALUES (".USER_ID.", '".$con->real_escape_string($sql)."', '".USER_IP."')");
 
-        return array("update_id" => $id);
+        $this->data->update_id = $id;
 
+        return array("success"=>true, "update_id" => $id);
     }
 
     function delete($id)
@@ -70,12 +106,13 @@ abstract class Controller
 
         if ($con->errno) {
             $this->error = ("Delete failed! SQL Error message: " . $con->error . "SQL that was executed: " . $sql);
-            return false;
+            $this->data->success = false;
         }
 
         //$con->query("INSERT INTO log (id_korisnik, sql_upit, ip) VALUES (".USER_ID.", '".$con->real_escape_string($sql)."', '".USER_IP."')");
 
-        return array("update_id" => $id);
+        $this->data->success = true;
+        $this->data->update_id = $id;
     }
 
     function insert()
@@ -101,6 +138,7 @@ abstract class Controller
         $insertID=$con->insert_id;
 
         if($con->errno) {
+            $this->data->success = false;
             $this->error = ("Insert failed! SQL Error message: ".$con->error."SQL that was executed: ".$fullSql);
             return false;
         }
@@ -109,20 +147,20 @@ abstract class Controller
     }
 
     function getById($id) {
-
         $tname = $this->table;
         $con = $this->db;
         $query = "SELECT * FROM $tname WHERE id_$tname = $id AND aktivan=1 ";
         $res = $con->query($query);
 
         if($con->errno) {
+            $this->data->success = false;
             $this->error = ("Query failed! SQL Error message: ".$con->error."SQL that was executed: ".$query);
             return false;
         }
 
         if ($res->num_rows == 1) {
-            $data = $res->fetch_assoc();
-            return $data;
+            $this->data->success = true;
+            $this->data->rows = $res->fetch_assoc();
         }
     }
 
@@ -130,7 +168,7 @@ abstract class Controller
     {
         $r=["data"=>$this->data];
         if($this->error) $r["error"]=$this->error;
-        echo json_encode($r);
+        echo json_encode($r, JSON_UNESCAPED_SLASHES);
     }
 
     public function dbQuery($query)
@@ -149,6 +187,7 @@ abstract class Controller
                 return $result;
             } else {
                 $this->error = $error;
+                $this->data->success = false;
                 return false;
             }
         }
@@ -169,111 +208,71 @@ abstract class Controller
     }
 
     public function escapePost () {
-        //var_dump($this->input);
         foreach ($this->input AS $key=>$value) {
             $this->input->$key = $this->db->escape_string($value);
-          //  var_dump($this->input);
+//            var_dump($this->input);
         }
     }
 
-    /*function fileUpload($file, $thumb)
+    function fileUpload($imgEncodedString, $imgName, $currentPicRowID="")
     {
-        $target_dir = ROOT."/uploads/";
-        try {
+        if ($currentPicRowID != "") { //ako je predan id znači da se slika mijenja pa brišemo trenutnu
+            $tname = $this->table;
+            $queryRes = $this->dbQuery("SELECT * FROM $tname WHERE id_$tname = $currentPicRowID")->fetch_assoc();
+            $imgPathToDelete = $queryRes["img_path"];
+            $imgPathToDelete = str_replace("http://yeloo.hr", "/home/yeloohr/public_html", $imgPathToDelete);
 
-            switch ($file['error']) {
-                case UPLOAD_ERR_OK:
-                    break;
-                case UPLOAD_ERR_NO_FILE:
-                    throw new RuntimeException('No file sent.');
-                case UPLOAD_ERR_INI_SIZE:
-                case UPLOAD_ERR_FORM_SIZE:
-                    throw new RuntimeException('Exceeded filesize limit.');
-                default:
-                    throw new RuntimeException('Unknown errors.');
-            }
+            unlink($imgPathToDelete);
+        }
 
-            if ($file['size'] > 1000000) {
-                throw new RuntimeException('Exceeded filesize limit.');
-            }
+        $target_dir = ROOT . "/img/";
 
-            $filename = $file['name'];
-            $actual_name = pathinfo($file['name'], PATHINFO_FILENAME);
-            $ext = pathinfo($filename, PATHINFO_EXTENSION);
-            $original_name = $actual_name;
+        $decoded_string = base64_decode($imgEncodedString);
+        $f = finfo_open();
+        $mime_type = finfo_buffer($f, $decoded_string, FILEINFO_MIME_TYPE);
 
+        //$imgSize = strlen($decoded_string);
+
+        $allowedMimeTypes = array (
+            // images
+            'png' => 'image/png',
+            'jpe' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'jpg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'bmp' => 'image/bmp',
+            'ico' => 'image/vnd.microsoft.icon',
+        );
+
+        if (!in_array($mime_type, $allowedMimeTypes)) { //ako ne zadovoljava formate ili je veća od 1mb -> dodat ako treba || $imgSize>1000000
+            return false;
+        }
+        else {
+            $original_name = pathinfo($imgName, PATHINFO_FILENAME);
+            $ext = pathinfo($imgName, PATHINFO_EXTENSION);
+
+            $current_name = $original_name;
+
+            $final_imgName = $original_name . "." . $ext; //ako se sprema slikaprvi put s određenim imenom moramo tu odma spremit
             $i = 1;
-            while (file_exists($target_dir . $actual_name . "." . $ext)) {
-                $actual_name = (string)$original_name . " ($i)";
-                $filename = $actual_name . "." . $ext;
+            while (file_exists($target_dir . $current_name . "." . $ext)) {
+                $current_name = (string)$original_name . "($i)";
+                $final_imgName = $current_name . "." . $ext;
                 $i++;
             }
 
-            if (!copy($file['tmp_name'], sprintf($target_dir . '%s', $filename))) {
-                throw new RuntimeException('Failed to move uploaded file.');
+            $remotePath = "http://yeloo.hr/AiR/MyGuideWebServices/img/" . $final_imgName;
+            $this->input->img_path = $remotePath;
+
+            $pathToSaveTo = $target_dir . $final_imgName;
+            $is_written = file_put_contents($pathToSaveTo, $decoded_string);
+
+            if ($is_written > 0) {
+                return true;
             }
-
-            //
-            //Kod za kreiranje thumb slike
-            $maxDim = 200;
-            list($width, $height, $type, $attr) = getimagesize( $file['tmp_name'] );
-            if ($thumb) {
-                if ($width > $maxDim || $height > $maxDim) { //Ako je original slika vec dovoljna mala nije potrebno raditi thumb posebno
-                    $target_filename = $file['tmp_name'];
-                    $fn = $file['tmp_name'];
-                    $size = getimagesize($fn);
-                    $ratio = $size[0] / $size[1]; // width/height
-                    if ($ratio > 1) {
-                        $width = $maxDim;
-                        $height = $maxDim / $ratio;
-                    } else {
-                        $width = $maxDim * $ratio;
-                        $height = $maxDim;
-                    }
-                    $src = imagecreatefromstring(file_get_contents($fn));
-                    $dst = imagecreatetruecolor($width, $height);
-                    imagealphablending($dst, false); //Potrebno da se sačuva transparency
-                    imagesavealpha($dst, true);      //Potrebno da se sačuva transparency
-                    imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, $size[0], $size[1]);
-                    imagedestroy($src);
-                    switch ($ext) {
-                        case 'jpg':
-                            imagejpeg($dst, $target_filename);
-                            break;
-                        case 'jpeg':
-                            imagejpeg($dst, $target_filename);
-                            break;
-                        case 'png':
-                            imagepng($dst, $target_filename);
-                            break;
-                        case 'gif':
-                            imagegif($dst, $target_filename);
-                            break;
-                        default:
-                            imagejpeg($dst, $target_filename);
-                    }
-                    imagedestroy($dst);
-                    if (!move_uploaded_file($file['tmp_name'], sprintf($target_dir . '%s%s.%s', $actual_name, "-thumb", $ext))) {
-                        throw new RuntimeException('Failed to move uploaded file.');
-                    }
-                    //Ako je kreiran thumb return vraća url original slike i thumba
-                    return array("slika" => sprintf($target_dir . '%s', $filename), "thumb" => sprintf($target_dir . '%s%s', "thumb_", $filename));
-                } else {
-                    //Ako nije potrebno resizeat sliku kao thumb se samo spremi orignalna nemodificirana slika
-                    if (!move_uploaded_file($file['tmp_name'], sprintf($target_dir . '%s%s.%s', $actual_name, "-thumb", $ext))) {
-                        throw new RuntimeException('Failed to move uploaded file.');
-                    }
-                    return array("slika" => sprintf($target_dir . '%s', $filename), "thumb" => sprintf($target_dir . '%s%s', "thumb_", $filename));
-                }
-
+            else {
+                return false;
             }
-            //kraj koda za kreiranje thumba
-
-        } catch (RuntimeException $e) {
-            $this->error = $e->getMessage();
-            return false;
         }
-
-        return sprintf($target_dir . '%s', $filename);
-    }*/
+    }
 }
