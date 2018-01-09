@@ -19,20 +19,32 @@ class Korisnik extends Controller
         $hashed_password = password_hash($this->input->lozinka, PASSWORD_BCRYPT);
         $this->input->lozinka = $hashed_password;
 
-        $response = $this->insert();
+        //$response = $this->insert();
 
-        if ($response!=false) {
-            $this->data = $response;
+        $encodedImgString = $this->input->img_path;
+        $imgName = $this->input->img_name;
 
-            //slanje aktivacijskog koda na mail
-            $currentTime = date("Y-m-d H:i:s", time());
-            $korisnicko_ime = $this->db->real_escape_string($this->input->korisnicko_ime);
-            $activationCode = md5(uniqid(rand(), true ) . $korisnicko_ime);
+        $image_upload = $this->fileUpload($encodedImgString, $imgName);
 
-            $this->dbQuery("INSERT INTO aktivacijski_kod VALUES (default, '$activationCode', '$currentTime', $response[insert_id], 0)");
+        if ($image_upload) {
+            $response = $this->insert();
 
-            $email = $this->db->real_escape_string($this->input->email);
-            $this->sendConfirmationMail($email, $activationCode);
+            if ($response!=false) {
+                $this->data = $response;
+                //slanje aktivacijskog koda na mail
+                $currentTime = date("Y-m-d H:i:s", time());
+                $korisnicko_ime = $this->db->real_escape_string($this->input->korisnicko_ime);
+                $activationCode = md5(uniqid(rand(), true ) . $korisnicko_ime);
+
+                $this->dbQuery("INSERT INTO aktivacijski_kod VALUES (default, '$activationCode', '$currentTime', $response[insert_id], 0)");
+
+                $email = $this->db->real_escape_string($this->input->email);
+                $this->sendConfirmationMail($email, $activationCode);
+            }
+        }
+        else {
+            $this->data->success = false;
+            $this->error = "Image upload failed";
         }
     }
 
@@ -51,7 +63,7 @@ class Korisnik extends Controller
         $mail=new PHPMailer;
         $mail->setFrom('donotreply@myguide.hr', 'MyGuide AutoMessage');
         $mail->addAddress($mailTo);
-        $mail->addReplyTo();
+        //$mail->addReplyTo();
         $mail->isHTML(true);
         $mail->Subject = '[MyGuide] Potvrda registracije';
         $mail->Body    = $html;
@@ -84,6 +96,40 @@ class Korisnik extends Controller
             } else {
                 $this->data->success = false;
                 $this->error = "Unesena lozinka nije ispravna";
+            }
+        }
+    }
+
+    function editProfile() {
+        $idKorisnik = $this->input->id_korisnik;
+
+        $encodedImgString = isset($this->input->img_path) ? $this->input->img_path : "";
+        $imgName = isset($this->input->img_name) ? $this->input->img_name : "";
+
+        if ($encodedImgString != "" && $imgName != "") {
+            $image_upload = $this->fileUpload($encodedImgString, $imgName, $idKorisnik);
+
+            if ($image_upload) {
+                unset ($this->input->id_korisnik);
+                $response = $this->update($idKorisnik);
+
+                if ($response!=false) {
+                    $this->data = $response;
+                }
+            }
+            else {
+                $this->data->success = false;
+                $this->error = "Image upload failed";
+            }
+        }
+
+        else { //ako se ne predaje slika samo ažuriraj ostale stupce
+            unset ($this->input->id_korisnik);
+            $response = $this->update($idKorisnik);
+
+            if ($response!=false) {
+                $this->data->success = true;
+                $this->data = $response;
             }
         }
     }
