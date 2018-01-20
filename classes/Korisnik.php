@@ -13,7 +13,7 @@ class Korisnik extends Controller
     {
         if ($this->userExists()) {
             $this->data->success = false;
-            $this->error = ("Već postoji korisnik s istim korisničkim imenom ili mail adresom");
+            $this->error = ("The username has already been taken");
             return;
         }
         $hashed_password = password_hash($this->input->lozinka, PASSWORD_BCRYPT);
@@ -44,7 +44,7 @@ class Korisnik extends Controller
         }
         else {
             $this->data->success = false;
-            $this->error = "Image upload failed";
+            $this->error = "Image upload failed.";
         }
     }
 
@@ -81,7 +81,7 @@ class Korisnik extends Controller
         $password = $this->db->real_escape_string($this->input->lozinka);
         $query = "SELECT * FROM korisnik WHERE aktivan=1 AND korisnicko_ime= '" . $username . "'";
 
-        if ($result = $this->dbSelect($query, "Za uneseno korisničko ime nije pronađen aktivirani korisnik")) {
+        if ($result = $this->dbSelect($query, "Invalid username or password.")) {
             $row = $result->fetch_assoc();
             $auth = password_verify($password, $row['lozinka']);
 
@@ -92,16 +92,23 @@ class Korisnik extends Controller
                 $this->data->ime = $row['ime'];
                 $this->data->prezime = $row['prezime'];
                 $this->data->email = $row['email'];
+                $this->data->img_path = $row['img_path'];
+                $this->data->img_name = $row['img_name'];
                 $this->data->id_tip_korisnika = $row['id_tip_korisnika'];
             } else {
                 $this->data->success = false;
-                $this->error = "Unesena lozinka nije ispravna";
+                $this->error = "Invalid username or password.";
             }
         }
     }
 
     function editProfile() {
         $idKorisnik = $this->input->id_korisnik;
+
+        if (isset($this->input->lozinka)) {
+            $hashed_password = password_hash($this->input->lozinka, PASSWORD_BCRYPT);
+            $this->input->lozinka = $hashed_password;
+        }
 
         $encodedImgString = isset($this->input->img_path) ? $this->input->img_path : "";
         $imgName = isset($this->input->img_name) ? $this->input->img_name : "";
@@ -125,6 +132,7 @@ class Korisnik extends Controller
 
         else { //ako se ne predaje slika samo ažuriraj ostale stupce
             unset ($this->input->id_korisnik);
+
             $response = $this->update($idKorisnik);
 
             if ($response!=false) {

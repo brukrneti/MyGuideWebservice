@@ -1,11 +1,11 @@
 <?php
 
-class Termin extends Controller
+class Rezervacija extends Controller
 {
     function __construct()
     {
         parent::__construct();
-        $this->table = 'termin';
+        $this->table = 'rezervacija';
     }
 
     function add() {
@@ -15,16 +15,16 @@ class Termin extends Controller
         }
     }
     function edit() {
-        $id_termin = $this->real_escape_string($this->input->id_termin);
-        $response = $this->update($id_termin);
+        $id_rezervacija = $this->real_escape_string($this->input->id_rezervacija);
+        $response = $this->update($id_rezervacija);
         if ($response!=false) {
             $this->data = $response;
         }
     }
-    function deleteTermin() {
-        $id_termin = $this->real_escape_string($this->input->id_termin);
+    function deleteReservation() {
+        $id_rezervacija = $this->real_escape_string($this->input->id_rezervacija);
 
-        $response = $this->delete($id_termin);
+        $response = $this->delete($id_rezervacija);
         if ($response!=false) {
             $this->data = $response;
         }

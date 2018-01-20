@@ -32,7 +32,7 @@ abstract class Controller
         $res = $con->query($query);
 
         if($con->errno) {
-            $this->error = ("Query failed! SQL Error message: ".$con->error."SQL that was executed: ".$query);
+            $this->error = ("Query failed! SQL Error message: ".$con->error.". SQL that was executed: ".$query);
             $this->data->success = false;
         }
 
@@ -55,7 +55,7 @@ abstract class Controller
 
         if($con->errno) {
             $this->data->success = false;
-            $this->error = ("Query failed! SQL Error message: ".$con->error."SQL that was executed: ".$query);
+            $this->error = ("Query failed! SQL Error message: ".$con->error.". SQL that was executed: ".$query);
         }
         else {
             $allRows = array();
@@ -85,13 +85,14 @@ abstract class Controller
         $con->query($sql);
 
         if ($con->errno) {
-            $this->error = ("Update failed! SQL Error message: " . $con->error . "SQL that was executed: " . $sql);
+            $this->data->success = false;
+            $this->error = ("Update failed! SQL Error message: " . $con->error . ". SQL that was executed: " . $sql);
             return false;
         }
 
         //$con->query("INSERT INTO log (id_korisnik, sql_upit, ip) VALUES (".USER_ID.", '".$con->real_escape_string($sql)."', '".USER_IP."')");
 
-        $this->data->update_id = $id;
+        //$this->data->update_id = $id;
 
         return array("success"=>true, "update_id" => $id);
     }
@@ -105,14 +106,14 @@ abstract class Controller
         $con->query($sql);
 
         if ($con->errno) {
-            $this->error = ("Delete failed! SQL Error message: " . $con->error . "SQL that was executed: " . $sql);
+            $this->error = ("Delete failed! SQL Error message: " . $con->error . ". SQL that was executed: " . $sql);
             $this->data->success = false;
+            return false;
         }
 
         //$con->query("INSERT INTO log (id_korisnik, sql_upit, ip) VALUES (".USER_ID.", '".$con->real_escape_string($sql)."', '".USER_IP."')");
 
-        $this->data->success = true;
-        $this->data->update_id = $id;
+        return array("success"=>true, "update_id" => $id);
     }
 
     function insert()
@@ -139,7 +140,7 @@ abstract class Controller
 
         if($con->errno) {
             $this->data->success = false;
-            $this->error = ("Insert failed! SQL Error message: ".$con->error."SQL that was executed: ".$fullSql);
+            $this->error = ("Insert failed! SQL Error message: ".$con->error.". SQL that was executed: ".$fullSql);
             return false;
         }
         //$con->query("INSERT INTO log (id_korisnik, sql_upit, ip) VALUES (".USER_ID.", '".$con->real_escape_string($fullSql)."', '".USER_IP."')");
@@ -154,7 +155,7 @@ abstract class Controller
 
         if($con->errno) {
             $this->data->success = false;
-            $this->error = ("Query failed! SQL Error message: ".$con->error."SQL that was executed: ".$query);
+            $this->error = ("Query failed! SQL Error message: ".$con->error.". SQL that was executed: ".$query);
             return false;
         }
 
@@ -175,7 +176,7 @@ abstract class Controller
     {
         $result = mysqli_query($this->db, $query);
         if ($result===false) {
-            $this->error = ("Query failed! SQL Error message: ".$this->db->error."SQL that was executed: ".$query);
+            $this->error = ("Query failed! SQL Error message: ".$this->db->error.". SQL that was executed: ".$query);
         }
         return $result;
     }

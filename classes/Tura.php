@@ -10,7 +10,6 @@ class Tura extends Controller
 
     function fetchAll()
     {
-        //var_dump(ROOT);
         $this->select();
     }
 
@@ -84,7 +83,11 @@ class Tura extends Controller
 
     function deleteTour() {
         $idTura = $this->input->id_tura;
-        $this->delete($idTura);
+
+        $response = $this->delete($idTura);
+        if ($response!=false) {
+            $this->data = $response;
+        }
     }
 
 }

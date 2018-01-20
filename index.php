@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Lena
- * Date: 17.7.2017.
- * Time: 13:50
- */
+
 //ini_set('max_input_vars', '10000');
 @session_start();
 define("ROOT", $_SERVER["DOCUMENT_ROOT"] . "/AiR/MyGuideWebServices");
