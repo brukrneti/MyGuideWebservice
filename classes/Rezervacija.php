@@ -15,14 +15,14 @@ class Rezervacija extends Controller
         }
     }
     function edit() {
-        $id_rezervacija = $this->real_escape_string($this->input->id_rezervacija);
+        $id_rezervacija = $this->db->real_escape_string($this->input->id_rezervacija);
         $response = $this->update($id_rezervacija);
         if ($response!=false) {
             $this->data = $response;
         }
     }
     function deleteReservation() {
-        $id_rezervacija = $this->real_escape_string($this->input->id_rezervacija);
+        $id_rezervacija = $this->db->real_escape_string($this->input->id_rezervacija);
 
         $response = $this->delete($id_rezervacija);
         if ($response!=false) {

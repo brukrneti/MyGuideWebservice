@@ -121,7 +121,17 @@ class Korisnik extends Controller
                 $response = $this->update($idKorisnik);
 
                 if ($response!=false) {
-                    $this->data = $response;
+                    $result = $this->dbQuery("SELECT * FROM korisnik WHERE id_korisnik=$idKorisnik");
+                    $row = $result->fetch_assoc();
+                    $this->data->success = true;
+                    $this->data->id_korisnik = $row['id_korisnik'];
+                    $this->data->korisnicko_ime = $row['korisnicko_ime'];
+                    $this->data->ime = $row['ime'];
+                    $this->data->prezime = $row['prezime'];
+                    $this->data->email = $row['email'];
+                    $this->data->img_path = $row['img_path'];
+                    $this->data->img_name = $row['img_name'];
+                    $this->data->id_tip_korisnika = $row['id_tip_korisnika'];
                 }
             }
             else {
@@ -136,9 +146,19 @@ class Korisnik extends Controller
             $response = $this->update($idKorisnik);
 
             if ($response!=false) {
+                $result = $this->dbQuery("SELECT * FROM korisnik WHERE id_korisnik=$idKorisnik");
+                $row = $result->fetch_assoc();
                 $this->data->success = true;
-                $this->data = $response;
+                $this->data->id_korisnik = $row['id_korisnik'];
+                $this->data->korisnicko_ime = $row['korisnicko_ime'];
+                $this->data->ime = $row['ime'];
+                $this->data->prezime = $row['prezime'];
+                $this->data->email = $row['email'];
+                $this->data->img_path = $row['img_path'];
+                $this->data->img_name = $row['img_name'];
+                $this->data->id_tip_korisnika = $row['id_tip_korisnika'];
             }
+
         }
     }
 }

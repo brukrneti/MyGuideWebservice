@@ -8,9 +8,19 @@ class Tura extends Controller
         $this->table = 'tura';
     }
 
-    function fetchAll()
+    function fetchAll($filter="")
     {
-        $this->select();
+
+        $filter == "" ? $filterUvjet = "" : $filterUvjet = "WHERE t.naziv LIKE '%$filter%'";
+
+        //$this->select();
+        $result = $this->dbQuery("SELECT t.*, k.ime AS ime_vodica, k.prezime AS prezime_vodica, k.email AS email_vodica FROM tura t JOIN korisnik k USING (id_korisnik) $filterUvjet");
+        $allRows = array();
+        while($currentRow = $result->fetch_assoc()) {
+            $allRows[] = $currentRow;
+        }
+        $this->data->success = true;
+        $this->data->rows = $allRows;
     }
 
     function fetchByGuide () {
@@ -20,13 +30,33 @@ class Tura extends Controller
             $this->error = "Foreign key not provided";
         }
         else {
-            $this->selectByFK("id_korisnik", $idVodica);
+            //$this->selectByFK("id_korisnik", $idVodica);
+
+            $result = $this->dbQuery("SELECT t.*, k.ime AS ime_vodica, k.prezime AS prezime_vodica, k.email AS email_vodica FROM tura t JOIN korisnik k USING (id_korisnik) WHERE t.id_korisnik=$idVodica");
+            $allRows = array();
+            while($currentRow = $result->fetch_assoc()) {
+                $allRows[] = $currentRow;
+            }
+            $this->data->success = true;
+            $this->data->rows = $allRows;
         }
     }
 
     function fetchById() {
         $idTure = isset($this->input->id_tura) ? $this->input->id_tura : "";
-        $this->getById($idTure);
+        if ($idTure == "") {
+            $this->error = "Foreign key not provided";
+        }
+        else {
+            //$this->getById($idTure);
+            $result = $this->dbQuery("SELECT t.*, k.ime AS ime_vodica, k.prezime AS prezime_vodica, k.email AS email_vodica FROM tura t JOIN korisnik k USING (id_korisnik) WHERE t.id_tura=$idTure");
+            $allRows = array();
+            while($currentRow = $result->fetch_assoc()) {
+                $allRows[] = $currentRow;
+            }
+            $this->data->success = true;
+            $this->data->rows = $allRows;
+        }
     }
 
     function add() {
